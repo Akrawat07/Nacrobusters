@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+
+  # ── FastAPI Backend (Member 2's server) ───────────────────
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=narcotrace123
+    depends_on:
+      - mongo
+      - neo4j
+    volumes:
+      - ./backend:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── React Frontend (Members 3 & 4's UI) ───────────────────
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  # ── MongoDB (stores all scraped + scored messages) ─────────
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # ── Neo4j (stores the account relationship graph) ──────────
+  neo4j:
+    image: neo4j:5
+    ports:
+      - "7474:7474"   # Neo4j browser UI
+      - "7687:7687"   # Bolt protocol (used by Python driver)
+    environment:
+      - NEO4J_AUTH=neo4j/narcotrace123
+    volumes:
+      - neo4j_data:/data
+
+volumes:
+  mongo_data:
+  neo4j_data:
